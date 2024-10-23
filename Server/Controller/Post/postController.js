@@ -1,5 +1,6 @@
 const postDb = require("../../Model/Post/postModel");
 const cloudinary = require("../../Cloudinary/Cloudinary");
+const Commentdb = require("../../Model/Comment/comentsModel");
 
 const createPost = async(req,res)=>{
 
@@ -21,7 +22,7 @@ const createPost = async(req,res)=>{
 
             const date = new Date().toLocaleDateString();
             const newPost = new postDb({
-                Date:date,heading,content,postimg:upload.secure_url,postuser,postusername
+                Date:date,heading,content,postimg:upload.secure_url,postuser,postusername,likes:0
             })
 
             await newPost.save();
@@ -73,6 +74,161 @@ const deletepost = async(req,res)=>{
     }
 }
 
+const addlike = async(req,res)=>{
+    try {
+        const {name} = req.body;
+        const islike = "red"
+        let relike = 0;
+    //   console.log(req.params);
+
+      const {postId} = req.params
+      
+        // console.log("postid",postId);
+        
+       const post = await postDb.findOne({_id:postId});
+        //  console.log(post);
+
+         if(post.likes.length > 0){
+            post.likes.map((element)=>{
+                if(name==element.name){  
+                    relike= relike +1;
+                }
+                else{
+                  relike = 0;
+                } 
+
+            })
+
+            // console.log("count",relike);
+            
+
+            // console.log("relike",relike);
+            
+            
+            
+            if(relike>0){
+               return res.status(400).json({error:"already given like"})
+            }else{
+                post.likes = [...post.likes,{name}]
+                await post.save();
+                
+            }
+            
+        }else{
+            console.log(post.likes.length);
+            
+            post.likes = {name}
+            await post.save();
+        }
+
+        // console.log(post);
+        
+        
+        
+        // post.likes = post.likes + 1;
+
+        // await post.save();
+
+        // console.log(post);
+
+
+        res.status(200).json(post.likes);
+        
+        
+    } catch (error) {
+        console.log(error);
+        
+    }
+}
+
+
+
+const removelike = async(req,res)=>{
+        const {name} = req.body;
+        const islike="white"
+        // console.log("name is ",name);
+        const {postId} = req.params;
+        let relike = 0;
+       const post = await postDb.findOne({_id:postId});
+        //  console.log("post likes",post.likes.length);
+
+         if(post.likes.length > 0){
+         const newlikes =   post.likes.filter((element)=>{
+                  return name !== element.name;
+            })
+
+            // console.log("newlikes",newlikes);
+
+            post.likes = newlikes;
+
+            await post.save();
+
+
+            // console.log("post",post.likes);
+
+              const response = {
+                like:post.likes,
+            islike
+        }
+        res.status(200).json(response);
+            
+            }
+
+            
+        }
+
+
+
+
+
+ const addComment  = async(req,res)=>{
+    try {
+
+        const {id,username,comment} = req.body
+
+        console.log(id,username,comment);
+        
+
+        if(!id || !username || !comment){
+            return res.status(400).json({error:"all fields are required"})
+        }
+
+        const newcomment = new Commentdb({
+            id,username,comment
+        })
+
+        await newcomment.save()
+
+        res.status(200).json(newcomment);
+        
+    } catch (error) {
+        console.log(error);
+        
+    }
+ }
+
+
+ const getcomments = async(req,res)=>{
+    try {
+        const { postId } = req.params;
+
+        // console.log(postId);
+        
+
+        const getallcomments = await Commentdb.find({id:postId});
+        if(getallcomments){
+            return res.status(200).json(getallcomments);
+        }
+    } catch (error) {
+        console.log(error);
+        
+    }
+ }
+        
+        
+    
+        
+        
 
 
 
@@ -83,4 +239,5 @@ const deletepost = async(req,res)=>{
 
 
 
-module.exports = {createPost,getposts,getSinglePost,deletepost}
+
+module.exports = {createPost,getposts,getSinglePost,deletepost,addlike,removelike,addComment,getcomments}
