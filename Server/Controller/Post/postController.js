@@ -186,20 +186,25 @@ const removelike = async(req,res)=>{
 
         const {id,username,comment} = req.body
 
-        console.log(id,username,comment);
-        
-
-        if(!id || !username || !comment){
-            return res.status(400).json({error:"all fields are required"})
-        }
-
-        const newcomment = new Commentdb({
+        const existing = await Commentdb.findOne({id,username});
+        if(existing){
+            await Commentdb.findByIdAndDelete({_id:existing._id});
+             const newcomment = new Commentdb({
             id,username,comment
         })
 
         await newcomment.save()
 
         res.status(200).json(newcomment);
+        }else{
+             const newcomment = new Commentdb({
+            id,username,comment
+        })
+
+        await newcomment.save()
+
+        res.status(200).json(newcomment);
+        }
         
     } catch (error) {
         console.log(error);
